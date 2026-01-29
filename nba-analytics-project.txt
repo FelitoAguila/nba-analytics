@@ -1,0 +1,32 @@
+nba-analytics/
+├── src/                      # Source Code
+│   ├── extract/              # Extraction functions
+│   │   ├── nba_api_extract.py     
+│   │   └── utils.py               
+│   ├── load/                 # Load to BigQuery
+│   │   └── bigquery_load.py       
+│   ├── transform/            # Data cleaning and transformations
+│   │   └── transformations.sql    
+│   └── pipeline/             # ETL Orchestration
+│       └── daily_etl.py           
+├── notebooks/                # Explorations and playground
+│   ├── 01_exploration.ipynb
+│   ├── 02_backfill_historical.ipynb
+│   └── 03_analysis_examples.ipynb
+├── sql/                      # Reusable analytical queries
+│   ├── player_trends.sql
+│   ├── team_performance.sql
+│   └── advanced_stats.sql
+├── config/                   # Config
+│   ├── config.yaml           
+│   └── secrets/              # .gitignore: service_account_key.json (auth BigQuery)
+├── dash_app/                 # Visualization app (Dash/Plotly)
+│   ├── app.py
+│   ├── pages/                
+│   └── components/
+├── tests/                    
+├── requirements.txt          
+├── .gitignore
+├── README.md                 # proyect description, setup, how to run, Dash screenshots
+├── Dockerfile                # Future deploy
+└── prefect_flows/            
