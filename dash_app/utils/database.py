@@ -2,32 +2,66 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 import pandas as pd
 import os
+import json
 
 class BigQueryDB:
     """
     Clase para manejar la conexión y consultas a BigQuery
+    Compatible con desarrollo local (archivo JSON) y producción (variables de entorno)
     """
     
     def __init__(self, credentials_path='config/service-account.json', project_id=None):
         """
         Inicializa la conexión a BigQuery
         
-        Args:
-            credentials_path: Ruta al archivo JSON de credenciales
-            project_id: ID del proyecto de GCP (opcional, se toma del JSON si no se provee)
-        """
-        # Cargar credenciales
-        self.credentials = service_account.Credentials.from_service_account_file(
-            credentials_path,
-            scopes=["https://www.googleapis.com/auth/cloud-platform"],
-        )
+        Prioridad:
+        1. Variable de entorno GOOGLE_CREDENTIALS (para Render/producción)
+        2. Archivo local credentials_path (para desarrollo)
         
-        # Obtener project_id del archivo de credenciales si no se provee
-        if project_id is None:
-            import json
-            with open(credentials_path) as f:
-                creds_json = json.load(f)
-                project_id = creds_json.get('project_id')
+        Args:
+            credentials_path: Ruta al archivo JSON de credenciales (desarrollo)
+            project_id: ID del proyecto de GCP (opcional)
+        """
+        # Intentar cargar desde variable de entorno primero (PRODUCCIÓN)
+        credentials_json = os.environ.get('GOOGLE_CREDENTIALS')
+        
+        if credentials_json:
+            print("📡 Cargando credenciales desde variable de entorno (Producción)")
+            try:
+                credentials_dict = json.loads(credentials_json)
+                self.credentials = service_account.Credentials.from_service_account_info(
+                    credentials_dict,
+                    scopes=["https://www.googleapis.com/auth/cloud-platform"],
+                )
+                if project_id is None:
+                    project_id = credentials_dict.get('project_id')
+                print(f"✅ Credenciales cargadas correctamente. Project: {project_id}")
+            except Exception as e:
+                print(f"❌ Error al cargar credenciales desde variable de entorno: {e}")
+                raise
+        
+        # Si no hay variable de entorno, usar archivo local (DESARROLLO)
+        elif os.path.exists(credentials_path):
+            print(f"💻 Cargando credenciales desde archivo local (Desarrollo): {credentials_path}")
+            self.credentials = service_account.Credentials.from_service_account_file(
+                credentials_path,
+                scopes=["https://www.googleapis.com/auth/cloud-platform"],
+            )
+            
+            # Obtener project_id del archivo
+            if project_id is None:
+                with open(credentials_path) as f:
+                    creds_json = json.load(f)
+                    project_id = creds_json.get('project_id')
+            print(f"✅ Credenciales cargadas correctamente. Project: {project_id}")
+        
+        else:
+            raise FileNotFoundError(
+                f"❌ No se encontraron credenciales. "
+                f"Opciones:\n"
+                f"1. Variable de entorno GOOGLE_CREDENTIALS (producción)\n"
+                f"2. Archivo {credentials_path} (desarrollo)"
+            )
         
         # Crear cliente de BigQuery
         self.client = bigquery.Client(
