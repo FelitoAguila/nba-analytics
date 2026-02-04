@@ -88,7 +88,7 @@ class BigQueryDB:
             print(f"Error ejecutando query: {e}")
             return pd.DataFrame()
     
-    def get_player_by_name(self, player_name, dataset_id, table_id):
+    def get_player(self, player_name, dataset_id, table_id, team=None):
         """
         Busca jugadores por nombre (búsqueda parcial)
         
@@ -104,9 +104,18 @@ class BigQueryDB:
         SELECT *
         FROM `{self.project_id}.{dataset_id}.{table_id}`
         WHERE UPPER(PLAYER) LIKE UPPER('%{player_name}%')
+        """
+        # Filter by team if provided
+        if team and team != 'all':
+            sql += f" AND TEAM = '{team}'"
+        
+        # Sorting
+        # Orden y límite
+        sql += """
         ORDER BY PTS DESC
         LIMIT 20
         """
+
         return self.query(sql)
     
     def get_all_players(self, dataset_id, table_id, limit=50):

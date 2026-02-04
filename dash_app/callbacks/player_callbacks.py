@@ -26,10 +26,10 @@ def register_player_callbacks(app):
             Input('player-search-input', 'value'),
             Input('position-filter', 'value'),
             Input('team-filter', 'value'),
-            Input('sort-filter', 'value')
+            Input('season-filter', 'value')
         ]
     )
-    def update_players_list(search_query, position, team, sort_by):
+    def update_players_list(search_query, position, team, season):
         """
         Actualiza la lista de jugadores según los filtros y búsqueda
         """
@@ -44,15 +44,16 @@ def register_player_callbacks(app):
         try:
             # Si hay búsqueda, buscar por nombre
             if search_query and search_query.strip():
-                df = db.get_player_by_name(
+                df = db.get_player(
                     search_query.strip(),
                     settings.DATASET_ID,
-                    settings.TABLE_ID
+                    season,
+                    team
                 )
-                results_text = f'Mostrando {len(df)} resultados para "{search_query}"'
+                results_text = f'Showing {len(df)} results for "{search_query}"'
             else:
                 # Si no hay búsqueda, no mostrar nada
-                return [], 'Ingresa el nombre de un jugador para comenzar la búsqueda'
+                return [], 'Enter player name to search'
             
             # Aplicar filtros adicionales si es necesario
             if not df.empty:
@@ -60,32 +61,15 @@ def register_player_callbacks(app):
                 if position and position != 'all' and 'POSITION' in df.columns:
                     df = df[df['POSITION'] == position]
                 
-                # Filtro de equipo
-                if team and team != 'all':
-                    df = df[df['TEAM'] == team]
-                
-                # Ordenamiento
-                sort_mapping = {
-                    'name_asc': ('PLAYER', True),
-                    'name_desc': ('PLAYER', False),
-                    'pts_desc': ('PTS', False),
-                    'ast_desc': ('AST', False),
-                    'reb_desc': ('REB', False)
-                }
-                
-                if sort_by in sort_mapping:
-                    sort_col, ascending = sort_mapping[sort_by]
-                    if sort_col in df.columns:
-                        df = df.sort_values(by=sort_col, ascending=ascending)
             
             # Si no hay resultados
             if df.empty:
                 return [
                     html.Div(className='no-results', children=[
-                        html.H3('🔍 No se encontraron resultados'),
-                        html.P(f'No hay jugadores que coincidan con "{search_query}"')
+                        html.H3('🔍 No players found'),
+                        html.P(f'No players match "{search_query}"')
                     ])
-                ], 'No se encontraron resultados'
+                ], 'No results found'
             
             # Crear cards de jugadores
             player_cards = []
@@ -95,13 +79,13 @@ def register_player_callbacks(app):
             return player_cards, results_text
             
         except Exception as e:
-            print(f"Error en búsqueda: {e}")
+            print(f"Search Error: {e}")
             return [
                 html.Div(className='no-results', children=[
                     html.H3('⚠️ Error'),
-                    html.P(f'Ocurrió un error al buscar jugadores: {str(e)}')
+                    html.P(f'An error occurred: {str(e)}')
                 ])
-            ], 'Error en búsqueda'
+            ], 'Search Error'
     
     @app.callback(
         Output('player-modal', 'is_open'),
