@@ -1,5 +1,6 @@
 from dash import Input, Output, State, html, callback_context, dcc
 import dash
+import json
 from utils.database import BigQueryDB
 from config import settings
 import plotly.graph_objects as go
@@ -110,13 +111,12 @@ def register_player_callbacks(app):
         if button_id == '':
             return is_open, []
         
-        import json
         button_data = json.loads(button_id)
         player_id = button_data['index']
         
         if db is None:
             return True, html.Div([
-                html.H3('Error de conexión', style={'color': 'white', 'textAlign': 'center'})
+                html.H3('Connection Error', style={'color': 'white', 'textAlign': 'center'})
             ])
         
         try:
@@ -125,7 +125,7 @@ def register_player_callbacks(app):
             
             if player_df.empty:
                 return True, html.Div([
-                    html.H3('Jugador no encontrado', style={'color': 'white', 'textAlign': 'center'})
+                    html.H3('Player not found', style={'color': 'white', 'textAlign': 'center'})
                 ])
             
             player_data = player_df.iloc[0]
@@ -135,7 +135,7 @@ def register_player_callbacks(app):
             
             if percentiles is None:
                 return True, html.Div([
-                    html.H3('Error al calcular percentiles', style={'color': 'white', 'textAlign': 'center'})
+                    html.H3('Error calculating percentiles', style={'color': 'white', 'textAlign': 'center'})
                 ])
             
             # Crear el gráfico de radar
@@ -153,17 +153,17 @@ def register_player_callbacks(app):
                         html.H2(player_data['PLAYER'], className='profile-name'),
                         html.P(f"{player_data['TEAM']} | #{player_data.get('RANK', 'N/A')}", className='profile-team'),
                         html.Div(className='profile-stats-summary', children=[
-                            html.Div([html.Strong('PPG: '), f"{round(player_data['PTS'], 1)}"]),
-                            html.Div([html.Strong('APG: '), f"{round(player_data['AST'], 1)}"]),
-                            html.Div([html.Strong('RPG: '), f"{round(player_data['REB'], 1)}"]),
+                            html.Div([html.Strong('PPG: '), f"{round(player_data['PTS']/player_data['GP'], 1)}"]),
+                            html.Div([html.Strong('APG: '), f"{round(player_data['AST']/player_data['GP'], 1)}"]),
+                            html.Div([html.Strong('RPG: '), f"{round(player_data['REB']/player_data['GP'], 1)}"]),
                         ])
                     ])
                 ]),
                 
                 # Sección de percentiles
                 html.Div(className='percentiles-section', children=[
-                    html.H3('Percentiles de Efectividad', className='section-title'),
-                    html.P('Posición del jugador respecto a toda la liga', className='section-subtitle'),
+                    html.H3('Percentile rankings', className='section-title'),
+                    html.P(f'{player_data["PLAYER"]} compared with the league', className='section-subtitle'),
                     
                     # Gráfico de radar
                     dcc.Graph(
@@ -244,9 +244,9 @@ def create_player_card(player_data):
     team = player_data.get('TEAM', 'N/A')
     
     # Estadísticas
-    ppg = round(player_data.get('PTS', 0), 1)
-    apg = round(player_data.get('AST', 0), 1)
-    rpg = round(player_data.get('REB', 0), 1)
+    ppg = round(player_data.get('PTS', 0) / player_data.get('GP', 1), 1)
+    apg = round(player_data.get('AST', 0) / player_data.get('GP', 1), 1)
+    rpg = round(player_data.get('REB', 0) / player_data.get('GP', 1), 1)
     
     # FG%
     fg_pct = round(player_data.get('FG_PCT', 0) * 100, 1) if player_data.get('FG_PCT') else 0
@@ -279,7 +279,7 @@ def create_player_card(player_data):
         html.Div(className='player-info', children=[
             html.H3(player_name, className='player-name'),
             html.P(team, className='player-team'),
-            html.P(f'{gp} Partidos Jugados', className='player-games', 
+            html.P(f'{gp} Games played', className='player-games', 
                    style={'fontSize': '0.85rem', 'color': 'rgba(255,255,255,0.5)', 'marginTop': '0.3rem'})
         ]),
         html.Div(className='player-stats-preview', children=[
@@ -300,7 +300,7 @@ def create_player_card(player_data):
                 html.Span(f'{fg_pct}%', className='stat-value')
             ])
         ]),
-        html.Button('Ver Perfil', className='view-profile-btn', id={'type': 'player-profile-btn', 'index': player_id})
+        html.Button('View Profile', className='view-profile-btn', id={'type': 'player-profile-btn', 'index': player_id})
     ])
 
 
@@ -385,7 +385,7 @@ def create_radar_chart(percentiles_data):
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=80, r=80, t=80, b=80),
-        height=400
+        height=500
     )
     
     return fig
