@@ -20,8 +20,8 @@ def create_layout():
                             )
                         ]),
                         html.Div(className='title-section', children=[
-                            html.H1('STATS DASHBOARD', className='main-title'),
-                            html.P('Advanced Analytics & Insights', className='subtitle')
+                            html.H1('ANALYTICS', className='main-title'),
+                            html.P('Advanced Charts & Insights', className='subtitle')
                         ])
                     ]),
                     
