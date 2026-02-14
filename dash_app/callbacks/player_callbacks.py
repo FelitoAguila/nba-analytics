@@ -93,9 +93,10 @@ def register_player_callbacks(app):
         Output('player-modal-content', 'children'),
         [Input({'type': 'player-profile-btn', 'index': dash.dependencies.ALL}, 'n_clicks')],
         [State('player-modal', 'is_open')],
+        Input('season-filter', 'value'),
         prevent_initial_call=True
     )
-    def toggle_player_modal(n_clicks_list, is_open):
+    def toggle_player_modal(n_clicks_list, is_open, season):
         """
         Abre/cierra el modal del perfil del jugador y carga los datos
         """
@@ -121,7 +122,7 @@ def register_player_callbacks(app):
         
         try:
             # Obtener datos completos del jugador
-            player_df = db.get_player_full_stats(player_id, settings.DATASET_ID, settings.TABLE_ID)
+            player_df = db.get_player_full_stats(player_id, settings.DATASET_ID, season)
             
             if player_df.empty:
                 return True, html.Div([
@@ -131,7 +132,7 @@ def register_player_callbacks(app):
             player_data = player_df.iloc[0]
             
             # Obtener percentiles
-            percentiles = db.get_player_percentiles(player_id, settings.DATASET_ID, settings.TABLE_ID)
+            percentiles = db.get_player_percentiles(player_id, settings.DATASET_ID, season)
             
             if percentiles is None:
                 return True, html.Div([
